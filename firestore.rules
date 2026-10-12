@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny all documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Admin verification: authenticated staff user
+    function isAdmin() {
+      return isSignedIn();
+    }
+
+    function isValidRegistration(data) {
+      return data.keys().hasAll(['fullName', 'email', 'mobile', 'productName', 'purchaseDate', 'purchasedFrom', 'agreedToTerms', 'status'])
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.mobile is string && data.mobile.size() >= 7 && data.mobile.size() <= 25
+        && data.productName is string && data.productName.size() >= 2 && data.productName.size() <= 100
+        && data.purchaseDate is string && data.purchaseDate.size() >= 8 && data.purchaseDate.size() <= 20
+        && data.purchasedFrom is string && data.purchasedFrom.size() >= 2 && data.purchasedFrom.size() <= 100
+        && data.agreedToTerms == true
+        && (data.status == 'Pending' || data.status == 'Verified' || data.status == 'Rejected')
+        && (!('modelVariant' in data) || (data.modelVariant is string && data.modelVariant.size() <= 100))
+        && (!('serialNumber' in data) || (data.serialNumber is string && data.serialNumber.size() <= 100))
+        && (!('orderId' in data) || (data.orderId is string && data.orderId.size() <= 100))
+        && (!('address' in data) || (data.address is string && data.address.size() <= 300))
+        && (!('invoiceFileName' in data) || (data.invoiceFileName is string && data.invoiceFileName.size() <= 255))
+        && (!('invoiceFileData' in data) || (data.invoiceFileData is string && data.invoiceFileData.size() <= 600000))
+        && (!('adminNotes' in data) || (data.adminNotes is string && data.adminNotes.size() <= 1000))
+        && (!('confirmationEmailSent' in data) || (data.confirmationEmailSent is bool))
+        && (!('emailSentAt' in data) || (data.emailSentAt is string && data.emailSentAt.size() <= 64))
+        && (!('emailMessageId' in data) || (data.emailMessageId is string && data.emailMessageId.size() <= 200))
+        && (!('emailError' in data) || (data.emailError is string && data.emailError.size() <= 1000))
+        && (!('adminNotifiedAt' in data) || (data.adminNotifiedAt is string && data.adminNotifiedAt.size() <= 64))
+        && (!('emailAttemptedAt' in data) || (data.emailAttemptedAt is string && data.emailAttemptedAt.size() <= 64));
+    }
+
+    // Customer Warranty Registrations
+    match /registrations/{registrationId} {
+      // Allow creation by public customers with strict payload validation and default Pending status
+      allow create: if isValidId(registrationId)
+        && isValidRegistration(incoming())
+        && incoming().status == 'Pending'
+        && (!('adminNotes' in incoming()) || incoming().adminNotes == '');
+
+      // Individual lookup by exact Registration ID is allowed for customers with their ticket ID;
+      // Mass listing/querying the database is strictly restricted to authenticated Admins to prevent data harvesting
+      allow get: if isValidId(registrationId);
+      allow list: if isAdmin();
+
+      // Only Admins can update status, internal notes, or record details
+      allow update: if isAdmin()
+        && isValidRegistration(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'status',
+          'adminNotes',
+          'updatedAt',
+          'confirmationEmailSent',
+          'emailSentAt',
+          'emailMessageId',
+          'emailError',
+          'adminNotifiedAt',
+          'emailAttemptedAt'
+        ]);
+
+      // Only Admins can delete registrations
+      allow delete: if isAdmin();
+    }
+
+    // Admin profiles collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // App Settings & Configuration (Products, Purchase Channels, Card Image)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

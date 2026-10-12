@@ -1,0 +1,193 @@
+{
+  "entities": {
+    "Registration": {
+      "title": "Registration",
+      "description": "Customer product lifetime warranty registration record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique warranty registration ID"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the customer",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the customer",
+          "format": "email",
+          "maxLength": 120
+        },
+        "mobile": {
+          "type": "string",
+          "description": "Mobile number of the customer",
+          "minLength": 7,
+          "maxLength": 25
+        },
+        "address": {
+          "type": "string",
+          "description": "Optional physical address",
+          "maxLength": 300
+        },
+        "productName": {
+          "type": "string",
+          "description": "Name of the Tapmate product",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "modelVariant": {
+          "type": "string",
+          "description": "Product model or variant",
+          "maxLength": 100
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "Product serial number or batch number",
+          "maxLength": 100
+        },
+        "purchaseDate": {
+          "type": "string",
+          "description": "Date of product purchase",
+          "maxLength": 20
+        },
+        "purchasedFrom": {
+          "type": "string",
+          "description": "Source of purchase",
+          "enum": [
+            "Tapmate Official Website",
+            "Online Marketplace",
+            "Retail Store / Dealer",
+            "Other"
+          ]
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Order ID or invoice number",
+          "maxLength": 100
+        },
+        "invoiceFileName": {
+          "type": "string",
+          "description": "Original file name of the invoice",
+          "maxLength": 255
+        },
+        "invoiceFileData": {
+          "type": "string",
+          "description": "Base64 data or download link for invoice preview",
+          "maxLength": 600000
+        },
+        "agreedToTerms": {
+          "type": "boolean",
+          "description": "Whether customer confirmed accurate info and warranty terms"
+        },
+        "status": {
+          "type": "string",
+          "description": "Verification status of warranty registration",
+          "enum": ["Pending", "Verified", "Rejected"]
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal administrative notes",
+          "maxLength": 1000
+        },
+        "confirmationEmailSent": {
+          "type": "boolean",
+          "description": "Whether the automated confirmation email has been dispatched"
+        },
+        "emailSentAt": {
+          "type": "string",
+          "description": "Timestamp when the confirmation email was dispatched"
+        },
+        "emailMessageId": {
+          "type": "string",
+          "description": "Nodemailer SMTP message ID of sent email"
+        },
+        "emailError": {
+          "type": "string",
+          "description": "Error details if email delivery failed"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp in ISO format"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp in ISO format"
+        }
+      },
+      "required": [
+        "fullName",
+        "email",
+        "mobile",
+        "productName",
+        "purchaseDate",
+        "purchasedFrom",
+        "agreedToTerms",
+        "status"
+      ]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Tapmate authorized administrative profile",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address"
+        },
+        "role": {
+          "type": "string",
+          "description": "Admin role identifier"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["email", "role"]
+    },
+    "AppConfig": {
+      "title": "AppConfig",
+      "description": "Dynamic configuration for products, purchase channels, and warranty card branding",
+      "type": "object",
+      "properties": {
+        "products": {
+          "type": "array",
+          "description": "List of active Tapmate products for registration"
+        },
+        "purchaseChannels": {
+          "type": "array",
+          "description": "List of active purchase channels/sources"
+        },
+        "cardImageUrl": {
+          "type": "string",
+          "description": "Custom or active warranty card image URL"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Email or ID of admin who updated settings"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Warranty registrations submitted by customers and managed by admins"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Authorized admin users who have access to dashboard management"
+    },
+    "/settings/{settingId}": {
+      "schema": "AppConfig",
+      "description": "Dynamic store configuration readable by public customers and manageable by admins"
+    }
+  }
+}

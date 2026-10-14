@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   signInWithPopup,
+  signInAnonymously,
   GoogleAuthProvider,
   onAuthStateChanged,
   User,
@@ -137,11 +138,32 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   }
 };
 
+export const ADMIN_MASTER_PASSWORD = 'Tapmate@warranty2026';
+
+export async function loginWithMasterPassword(password: string): Promise<boolean> {
+  if (password === ADMIN_MASTER_PASSWORD) {
+    try {
+      await signInAnonymously(auth);
+    } catch (e) {
+      // In case anonymous auth is not enabled in Firebase Console, the local session token still grants dashboard access
+      console.warn('Anonymous sign-in skipped or unavailable:', e);
+    }
+    try {
+      sessionStorage.setItem('tapmate_admin_session', 'authenticated_2026');
+    } catch {}
+    return true;
+  }
+  return false;
+}
+
 export const getAccessToken = async (): Promise<string | null> => {
   return cachedAccessToken;
 };
 
 export const logoutAdmin = async () => {
+  try {
+    sessionStorage.removeItem('tapmate_admin_session');
+  } catch {}
   await signOut(auth);
   cachedAccessToken = null;
 };

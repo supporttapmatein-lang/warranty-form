@@ -37,19 +37,38 @@ export default function App() {
     };
   }, []);
 
-  // Initialize Firebase Auth listener on app boot
+  // Initialize Admin session from sessionStorage or Firebase Auth on app boot
   useEffect(() => {
+    try {
+      const activeSession = sessionStorage.getItem('tapmate_admin_session');
+      if (activeSession === 'authenticated_2026') {
+        setAdminUser({
+          uid: 'tapmate-admin-master',
+          email: 'admin@tapmate.in',
+          displayName: 'Tapmate Administrator',
+          isAdmin: true,
+        });
+      }
+    } catch {}
+
     const unsubscribe = initAuth(
       (user) => {
         setAdminUser({
           uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
+          email: user.email || 'admin@tapmate.in',
+          displayName: user.displayName || 'Tapmate Administrator',
           isAdmin: true,
         });
       },
       () => {
-        setAdminUser(null);
+        try {
+          const activeSession = sessionStorage.getItem('tapmate_admin_session');
+          if (activeSession !== 'authenticated_2026') {
+            setAdminUser(null);
+          }
+        } catch {
+          setAdminUser(null);
+        }
       }
     );
 

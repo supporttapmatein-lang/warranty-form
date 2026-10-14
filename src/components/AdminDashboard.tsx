@@ -10,6 +10,9 @@ import {
   FileText,
   Trash2,
   Eye,
+  EyeOff,
+  KeyRound,
+  AlertCircle,
   RefreshCw,
   LogOut,
   ExternalLink,
@@ -34,7 +37,7 @@ import {
   getRegistrations,
   updateRegistrationStatus,
   deleteRegistration,
-  googleSignIn,
+  loginWithMasterPassword,
   logoutAdmin,
   subscribeRegistrations,
   updateAppConfig,
@@ -94,6 +97,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Tabs: registrations | customization | googleForms
   const [activeTab, setActiveTab] = useState<'registrations' | 'customization' | 'googleForms'>(
@@ -268,23 +273,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Google Login
-  const handleLogin = async () => {
+  // Admin Master Password Authentication
+  const handlePasswordLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = passwordInput.trim();
+    if (!trimmed) {
+      setAuthError('Please enter the administrator password.');
+      return;
+    }
+
     setIsLoggingIn(true);
     setAuthError(null);
+
     try {
-      const res = await googleSignIn();
-      if (res?.user) {
+      const success = await loginWithMasterPassword(trimmed);
+      if (success) {
         onAdminLoginSuccess({
-          uid: res.user.uid,
-          email: res.user.email,
-          displayName: res.user.displayName,
+          uid: 'tapmate-admin-master',
+          email: 'admin@tapmate.in',
+          displayName: 'Tapmate Administrator',
           isAdmin: true,
         });
+        setPasswordInput('');
+      } else {
+        setAuthError('Incorrect password. Access denied.');
       }
     } catch (err: any) {
-      console.error('Admin login failed:', err);
-      setAuthError(err.message || 'Login failed. Please verify credentials.');
+      console.error('Password authentication error:', err);
+      setAuthError('Authentication failed. Please verify password and try again.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -446,7 +462,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return { total, pending, verified, rejected };
   }, [registrations]);
 
-  // If Not Authenticated, show Admin Login Screen
+  // If Not Authenticated, show Admin Password Login Screen
   if (!adminUser) {
     return (
       <div className="max-w-md mx-auto px-4 py-16">
@@ -456,52 +472,75 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Tapmate Staff Portal</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Authorized administrator access to verify customer registrations and customize warranty settings.
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Admin Portal</h2>
+            <p className="text-xs text-slate-500 mt-1.5">
+              Enter administrator password to access customer warranty records and store settings.
             </p>
           </div>
 
           {authError && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-left">
-              {authError}
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-left flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <span>{authError}</span>
             </div>
           )}
 
-          <div className="pt-2">
-            <button
-              onClick={handleLogin}
-              disabled={isLoggingIn}
-              className="gsi-material-button w-full shadow-sm"
-            >
-              <div className="gsi-material-button-icon">
-                <svg viewBox="0 0 48 48" className="w-5 h-5">
-                  <path
-                    fill="#EA4335"
-                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                  />
-                </svg>
+          <form onSubmit={handlePasswordLogin} className="space-y-4 pt-1">
+            <div className="text-left space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                Administrator Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value);
+                    if (authError) setAuthError(null);
+                  }}
+                  placeholder="Enter administrator password"
+                  autoComplete="current-password"
+                  autoFocus
+                  required
+                  className="w-full pl-10 pr-11 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#399FC5] focus:bg-white transition-all text-slate-900 font-medium placeholder:text-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-              <span>{isLoggingIn ? 'Authenticating...' : 'Sign in with Google'}</span>
-            </button>
-          </div>
+            </div>
 
-          <div className="pt-4 border-t border-slate-100 text-left text-xs text-slate-500 space-y-1">
-            <p className="font-semibold text-slate-700">Protected Administrator Environment</p>
+            <button
+              type="submit"
+              disabled={isLoggingIn || !passwordInput.trim()}
+              className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 group cursor-pointer"
+            >
+              {isLoggingIn ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 text-[#399FC5] group-hover:scale-105 transition-transform" />
+                  <span>Unlock Admin Portal</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="pt-4 border-t border-slate-100 text-left text-xs text-slate-400 space-y-1">
+            <p className="font-medium text-slate-600">Secure Access Management</p>
             <p>
-              Direct Firestore reads are secured by database security rules. Customer PII is inaccessible to unauthorized public sessions.
+              Direct Firestore reads are secured by database security rules. Customer records and warranty settings are restricted to verified staff sessions.
             </p>
           </div>
         </div>

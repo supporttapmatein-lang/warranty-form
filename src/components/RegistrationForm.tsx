@@ -216,12 +216,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         agreedToTerms: true,
       };
 
-      if (formData.address.trim()) payload.address = formData.address.trim();
-      if (formData.modelVariant.trim()) payload.modelVariant = formData.modelVariant.trim();
-      if (formData.serialNumber.trim()) payload.serialNumber = formData.serialNumber.trim();
-      if (formData.orderId.trim()) payload.orderId = formData.orderId.trim();
-      if (formData.invoiceFileName.trim()) payload.invoiceFileName = formData.invoiceFileName.trim();
-      if (formData.invoiceFileData) payload.invoiceFileData = formData.invoiceFileData;
+      if (formData.address && typeof formData.address === 'string' && formData.address.trim()) {
+        payload.address = formData.address.trim();
+      }
+      if (formData.modelVariant && typeof formData.modelVariant === 'string' && formData.modelVariant.trim()) {
+        payload.modelVariant = formData.modelVariant.trim();
+      }
+      if (formData.serialNumber && typeof formData.serialNumber === 'string' && formData.serialNumber.trim()) {
+        payload.serialNumber = formData.serialNumber.trim();
+      }
+      if (formData.orderId && typeof formData.orderId === 'string' && formData.orderId.trim()) {
+        payload.orderId = formData.orderId.trim();
+      }
+      if (formData.invoiceFileName && typeof formData.invoiceFileName === 'string' && formData.invoiceFileName.trim()) {
+        payload.invoiceFileName = formData.invoiceFileName.trim();
+      }
+      if (formData.invoiceFileData && typeof formData.invoiceFileData === 'string' && formData.invoiceFileData.trim()) {
+        payload.invoiceFileData = formData.invoiceFileData;
+      }
 
       const registrationRecord = await createRegistration(payload);
 
